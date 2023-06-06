@@ -1,0 +1,93 @@
+import os
+import pandas as pd
+from lxml import etree
+import re
+
+# Define the parent folder path
+parent_folder_path = '/Users/dali/Downloads/Archive'
+
+# Create an empty list to store the extracted data
+data_list = []
+# Define the regular expression pattern for matching "AI", "artificial intelligence", or "Artificial Intelligence"
+pattern = re.compile(r'AI|artificial intelligence|Artificial Intelligence')
+
+years = ['2010', '2011', '2012', '2013', '2014','2015','2016','2017','2018','2019','2020','2021','2022']
+
+# Iterate over the subdirectories (years) in the parent folder
+for year in years:
+    year_folder_path = parent_folder_path+'/'+year
+    print(year_folder_path)
+
+         # Iterate over the XML files in the year folder
+    for filename in os.listdir(year_folder_path):
+        if filename.endswith('.xml'):
+            xml_file_path = os.path.join(year_folder_path, filename)
+
+            # Read the XML content from the file
+            xml_tree = etree.parse(xml_file_path)
+            root = xml_tree.getroot()
+            body_text = root.findtext('.//Body')
+
+                ######Event Data########
+
+            # Extract Event ID
+            event_id = root.attrib.get('Id', '')
+            event_title = root.findtext('.//eventTitle')
+            city = root.findtext('.//city')
+            start_date = root.findtext('.//startDate')
+            cusip = root.findtext('.//CUSIP')
+            sedol = root.findtext('.//SEDOL')
+            isin = root.findtext('.//ISIN')
+            # Extract Event Type Name
+            event_type_name = root.attrib.get('eventTypeName', '')
+
+                ######Company Data########
+            company_name = root.findtext('.//companyName')
+            company_ticker = root.findtext('.//companyTicker')
+            company_id = root.findtext('.//companyId')
+
+               
+            body_element = root.find('.//Body')
+            if body_element is not None and body_element.text:
+                body_text = body_element.text.strip()
+                presentation_match = re.search(r'Presentation\s+-{1,}\s+(.*?)\s+={2,}\s+Questions and Answers', body_text, re.DOTALL)
+                presentation = presentation_match.group(1).strip() if presentation_match else ""
+
+            # Check if the presentation contains the word "AI"
+            contains_ai = bool(pattern.search(presentation))
+
+                
+            # Extract additional metadata
+            last_update = root.attrib.get('lastUpdate', '')
+            event_story_tag = root.find('.//EventStory')
+            if event_story_tag is not None:
+                story_type = event_story_tag.get('storyType')
+                version = event_story_tag.get('version')
+                expiration_date = event_story_tag.get('expirationDate')
+            else:
+                story_type = None
+                version = None
+                expiration_date = None
+
+
+
+            # Append the extracted data to the data_list
+            data_list.append({
+                    
+                    "Event ID": event_id,
+                    "Event Title": event_title,
+                    "Event Type Name": event_type_name,
+                    "City": city,
+                    "Start Date": start_date,
+                    "CUSIP": cusip,
+                    "SEDOL": sedol,
+                    "ISIN": isin,
+                    "Story Type": story_type,
+                    "Version": version,
+                    "Company ID": company_id,
+                    "Company Name": company_name,
+                    "Company Ticker": company_ticker,
+                    "Contains AI": contains_ai                })
+
+# Create a DataFrame from the extracted data
+df = pd.DataFrame(data_list)
