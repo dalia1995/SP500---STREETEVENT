@@ -1,0 +1,82 @@
+stevent_df = pd.read_csv('/Users/dali/Downloads/extracted_SE_data_1.csv')
+
+sp500_df = pd.read_csv("/Users/dali/Downloads/S&P 500 Companies (Standard and Poor 500) - basics.csv")
+
+# Merge the dataframes on Company Name and Company Ticker columns
+merged_df = pd.merge(stevent_df, sp500_df, how="inner", left_on=["Company Ticker"], right_on=["Symbol"])
+
+# Save the filtered dataframe to a new CSV file
+filtered_df = merged_df[(merged_df["Contains AI"] == True)]
+
+
+# Select the desired columns
+selected_columns = [ "Event ID", "Start Date","Company ID", "Company Name", "Company Ticker", "Sector", "Contains AI"]
+filtered_df = filtered_df[selected_columns]
+
+
+output_csv_path = "/Users/dali/Downloads/merged_filtered_analysis.csv"
+
+filtered_df.to_csv(output_csv_path, index=False)
+
+
+#by sector 
+df = filtered_df
+
+# Count the number of True values for each sector
+sector_counts = df[df["Contains AI"] == True]["Sector"].value_counts(ascending=True)
+
+print(sector_counts)
+
+
+# Create a horizontal bar chart
+plt.barh(sector_counts.index, sector_counts.values)
+
+# Customize the chart
+plt.xlabel("Number of AI Citations")
+plt.ylabel("Sector")
+plt.title("AI Citations for S&P500 by Sector")
+
+# Display the chart
+plt.show()
+
+
+
+
+# Count the number of citations per company
+citations_count = filtered_df["Company Name"].value_counts().head(10)
+
+# Sort the citations_count series by values
+citations_count = citations_count.sort_values()
+
+# Plotting the top 10 companies with most citations
+plt.figure(figsize=(8, 4))
+citations_count.plot(kind="barh")  # Use barh for horizontal bars
+plt.xlabel("Citations Count")
+plt.ylabel("Company")
+plt.title("Top 10 Companies with Most Citations")
+plt.show()
+print(citations_count)
+
+
+
+
+# Extract the year from the "Start Date" column
+df["Year"] = pd.to_datetime(df["Start Date"]).dt.year
+print(df["Year"],'--', df.groupby("Year")["Contains AI"].sum())
+# Aggregate the "Contains AI" values by years
+aggregated_data = df.groupby("Year")["Contains AI"].sum()
+
+print(df["Contains AI"].sum())
+# Create a bar chart
+aggregated_data.plot(kind="bar")
+
+# Customize the chart
+plt.xlabel("Year")
+plt.ylabel("Number of AI Citations")
+plt.title("AI Citations by Years")
+
+# Display the chart
+plt.show()
+
+
+
